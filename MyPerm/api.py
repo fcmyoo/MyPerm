@@ -222,4 +222,7 @@ def defend_attack(func):
     return _deco
 
 
+def http_success(request,msg):
+    return render(request,'success.html',locals())
+
 logger = set_log(LOG_LEVEL)

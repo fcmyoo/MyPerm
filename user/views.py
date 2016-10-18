@@ -3,7 +3,7 @@ from django.shortcuts import render
 import uuid
 from django.db.models import Q
 
-from MyPerm.settings import MAIL_ENABLE
+from MyPerm.settings import MAIL_ENABLE, KEY
 from user.user_api import *
 
 # Create your views here.
@@ -13,6 +13,7 @@ MAIL_FROM = EMAIL_HOST_USER
 
 
 # 添加用户
+@require_role(role='super')
 def user_add(request):
     error = ''
     msg = ''
@@ -65,6 +66,7 @@ def user_add(request):
 
 
 # 展示用户列表
+@require_role(role='super')
 def user_list(request):
     user_role = {'SU': '超级管理员', 'GA': '组管理员', 'CU': '普通用户'}
     keyword = request.GET.get('keyword', '')
@@ -84,6 +86,7 @@ def user_list(request):
 
 
 # 用户详情页
+@require_role(role='super')
 def user_detail(request):
     if request.session.get('role_id') == 0:
         user_id = request.user.id
@@ -99,6 +102,7 @@ def user_detail(request):
 
 
 # 修改用户
+@require_role(role='super')
 def user_edit(request):
     if request.method == 'GET':
         user_id = request.GET.get('id', '')
@@ -155,6 +159,7 @@ def user_edit(request):
 
 
 # 删除用户
+@require_role(role='admin')
 def user_del(request):
     if request.method == 'GET':
         user_ids = request.GET.get('id', '')
@@ -173,6 +178,7 @@ def user_del(request):
 
 
 # 个人信息页
+@require_role(role='user')
 def profile(request):
     user_id = request.user.id
     if not user_id:
@@ -204,3 +210,27 @@ def change_info(request):
                 user.save()
             msg = '修改成功'
     return my_render('user/change_info.html', locals(), request)
+
+
+@defend_attack
+def forget_password(request):
+    if request.method == 'POST':
+        defend_attack(request)
+        email = request.POST.get('email', '')
+        username = request.POST.get('username', '')
+        name = request.POST.get('name', '')
+        user = get_object(User, username=username, email=email, name=name)
+        if user:
+            timestamp = int(time.time())
+            hash_encode = PyCrypt.md5_crypt(str(user.uuid) + str(timestamp) + KEY)
+            msg = """
+               Hi %s, 请点击下面链接重设密码！
+               %s/juser/password/reset/?uuid=%s&timestamp=%s&hash=%s
+               """ % (user.name, URL, user.uuid, timestamp, hash_encode)
+            send_mail('忘记跳板机密码', msg, MAIL_FROM, [email], fail_silently=False)
+            msg = '请登陆邮箱，点击邮件重设密码'
+            return http_success(request, msg)
+        else:
+            error = '用户不存在或邮件地址错误'
+
+    return render(request,'user/forget_password.html', locals())

@@ -13,9 +13,11 @@ def skin_config(request):
 def Login(request):
     """登录界面"""
     error = ''
+    print('one',request)
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('index'))
     if request.method == 'GET':
+
         return render_to_response('login.html')
     else:
         username = request.POST.get('username')
