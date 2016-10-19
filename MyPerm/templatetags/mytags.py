@@ -1,9 +1,7 @@
-import re
 import ast
-import time
 
 from django import template
-# from jperm.models import PermPush
+
 from MyPerm.api import *
 # from jperm.perm_api import get_group_user_perm
 
@@ -43,27 +41,27 @@ def groups2str(group_list):
         return '%s ...' % ' '.join([group.name for group in group_list[0:2]])
 
 
-@register.filter(name='user_asset_count')
-def user_asset_count(user):
-    """
-    返回用户权限主机的数量
-    """
-    assets = user.asset.all()
-    asset_groups = user.asset_group.all()
+# @register.filter(name='user_asset_count')
+# def user_asset_count(user):
+#     """
+#     返回用户权限主机的数量
+#     """
+#     assets = user.asset.all()
+#     asset_groups = user.asset_group.all()
+#
+#     for asset_group in asset_groups:
+#         if asset_group:
+#             assets.extend(asset_group.asset_set.all())
+#
+#     return len(assets)
 
-    for asset_group in asset_groups:
-        if asset_group:
-            assets.extend(asset_group.asset_set.all())
 
-    return len(assets)
-
-
-@register.filter(name='user_asset_group_count')
-def user_asset_group_count(user):
-    """
-    返回用户权限主机组的数量
-    """
-    return len(user.asset_group.all())
+# @register.filter(name='user_asset_group_count')
+# def user_asset_group_count(user):
+#     """
+#     返回用户权限主机组的数量
+#     """
+#     return len(user.asset_group.all())
 
 
 @register.filter(name='bool2str')
@@ -92,8 +90,9 @@ def to_name(user_id):
         if user:
             user = user[0]
             return user.name
-    except:
-        return '非法用户'
+    except Exception as e:
+
+        return '非法用户{}'.format(e)
 
 
 @register.filter(name='to_role_name')
@@ -167,19 +166,19 @@ def user_which_group(user, member):
     return ','.join(names)
 
 
-@register.filter(name='asset_which_groups')
-def asset_which_group(asset, member):
-    """
-    instance is a user object,
-    use to get the group of the user
-    :param instance:
-    :param member:
-    :return:
-    """
-    member = getattr(asset, member)
-    names = [members.name for members in member.all()]
-
-    return ','.join(names)
+# @register.filter(name='asset_which_groups')
+# def asset_which_group(asset, member):
+#     """
+#     instance is a user object,
+#     use to get the group of the user
+#     :param instance:
+#     :param member:
+#     :return:
+#     """
+#     member = getattr(asset, member)
+#     names = [members.name for members in member.all()]
+#
+#     return ','.join(names)
 
 
 @register.filter(name='group_str2')

@@ -1,22 +1,20 @@
+import hashlib
 import logging
 import os
-from Crypto.Cipher import AES
 import random
-import datetime
-import hashlib
-# import crypt
-from MyPerm.cryptforwindows import crypt
-from binascii import b2a_hex, a2b_hex
+from binascii import b2a_hex
+
+from Crypto.Cipher import AES
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.shortcuts import render_to_response, render
-from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponse
-from MyPerm.settings import LOG_DIR, LOG_LEVEL
-from user.models import *
+from django.shortcuts import render
+
+from MyPerm.cryptforwindows import crypt
+from MyPerm.settings import LOG_DIR, LOG_LEVEL, KEY
+from user.models import User
 
 
-# 自定义异常类
 class ServerError(Exception):
     pass
 
@@ -209,6 +207,33 @@ def require_role(role='user'):
     return _deco
 
 
+# 要求请求角色正确
+def is_role_request(request, role='user'):
+    """
+    require this request of user is right
+    要求请求角色正确
+    """
+    role_all = {'user': 'CU', 'admin': 'GA', 'super': 'SU'}
+    if request.user.role == role_all.get(role, 'CU'):
+        return True
+    else:
+        return False
+
+
+# 获取用户信息
+@require_role
+def get_session_user_info(request):
+    """
+    get the user info of the user in session, for example id, username etc.
+    获取用户的信息
+    """
+    # user_id = request.session.get('user_id', 0)
+    # user = get_object(User, id=user_id)
+    # if user:
+    #     return [user.id, user.username, user]
+    return [request.user.id, request.user.username, request.user]
+
+
 # 控制请求
 def defend_attack(func):
     def _deco(request, *args, **kwargs):
@@ -222,7 +247,93 @@ def defend_attack(func):
     return _deco
 
 
+# 获取session中用户的部门
+def get_session_user_dept(request):
+    """
+    get department of the user in session
+    获取session中用户的部门
+    """
+    # user_id = request.session.get('user_id', 0)
+    # print '#' * 20
+    # print user_id
+    # user = User.objects.filter(id=user_id)
+    # if user:
+    #     user = user[0]
+    #     return user, None
+    return request.user, None
+
+
+# 获取用户的部门id
+def get_user_dept(request):
+    """
+    get the user dept id
+    获取用户的部门id
+    """
+    user_id = request.user.id
+    if user_id:
+        user_dept = User.objects.get(id=user_id).dept
+        return user_dept.id
+
+
+def validate(request, user_group=None, user=None, asset_group=None, asset=None, edept=None):
+    """
+    validate the user request
+    判定用户请求是否合法
+    """
+    dept = get_session_user_dept(request)[1]
+    if edept:
+        if dept.id != int(edept[0]):
+            return False
+
+    if user_group:
+        dept_user_groups = dept.usergroup_set.all()
+        user_group_ids = []
+        for group in dept_user_groups:
+            user_group_ids.append(str(group.id))
+
+        if not set(user_group).issubset(set(user_group_ids)):
+            return False
+
+    if user:
+        dept_users = dept.user_set.all()
+        user_ids = []
+        for dept_user in dept_users:
+            user_ids.append(str(dept_user.id))
+
+        if not set(user).issubset(set(user_ids)):
+            return False
+
+    if asset_group:
+        dept_asset_groups = dept.bisgroup_set.all()
+        asset_group_ids = []
+        for group in dept_asset_groups:
+            asset_group_ids.append(str(group.id))
+
+        if not set(asset_group).issubset(set(asset_group_ids)):
+            return False
+
+    if asset:
+        dept_assets = dept.asset_set.all()
+        asset_ids = []
+        for dept_asset in dept_assets:
+            asset_ids.append(str(dept_asset.id))
+
+        if not set(asset).issubset(set(asset_ids)):
+            return False
+
+    return True
+
+
+# 请求成功
 def http_success(request,msg):
     return render(request,'success.html',locals())
 
+
+# 请求错误
+def http_error(request, msg):
+    message = msg
+    return render(request, 'error.html', locals())
+
+
 logger = set_log(LOG_LEVEL)
+CRYPTOR = PyCrypt(KEY)

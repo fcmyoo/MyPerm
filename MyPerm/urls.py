@@ -28,7 +28,7 @@ urlpatterns = [
     # url(r'^exec_cmd/$', 'exec_cmd', name='exec_cmd'),
     # url(r'^file/upload/$', 'upload', name='file_upload'),
     # url(r'^file/download/$', 'download', name='file_download'),
-    # url(r'^setting', 'setting', name='setting'),
+    url(r'^setting', setting, name='setting'),
     # url(r'^terminal/$', 'web_terminal', name='terminal'),
     url(r'^user/', include(urls)),
     # url(r'^jasset/', include('jasset.urls')),

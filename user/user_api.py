@@ -1,7 +1,7 @@
-from Crypto.PublicKey import RSA
 from django.core.mail import send_mail
+
 from MyPerm.api import *
-from MyPerm.settings import BASE_DIR, EMAIL_HOST_USER as MAIL_FROM, URL
+from MyPerm.settings import EMAIL_HOST_USER as MAIL_FROM, URL
 
 
 # 数据库中添加用户
@@ -95,3 +95,25 @@ def get_display_msg(user, password='', send_mail_need=False):
                该账号密码可以登陆web和跳板机。
                """ % (user.username, password, URL)
     return msg
+
+
+# 向用户组添加用户写入数据库
+def group_add_user(group, user_id=None, username=None):
+    if user_id:
+        user = get_object(User, user_id)
+    else:
+        user = get_object(User, username=username)
+    if user:
+        group.user_set.add(user)
+
+
+# 向数据库添加用户组
+def db_add_group(**kwargs):
+    name = kwargs.get('name')
+    group = get_object(UserGroup, name=name)
+    users = kwargs('user_id')
+    if not group:
+        group = UserGroup(**kwargs)
+        group.save()
+        for user_id in users:
+            group_add_user(group, user_id)

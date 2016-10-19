@@ -1,6 +1,7 @@
 {% load mytags %}
 <li class="nav-header">
     <div class="dropdown profile-element">
+        {% print session_role_id %}
         <span>
             <img alt="image" class="img-circle" width="48" height="48" src="/static/img/{{ session_role_id | to_avatar }}.png" />
         </span>

@@ -48,14 +48,14 @@
                                         <td class="text-navy">权限</td>
                                         <td>{{ user.id | get_role }}</td>
                                     </tr>
-                                    <tr>
-                                        <td class="text-navy">key</td>
-                                        {% if user.username|key_exist %}
-                                        <td><a  href="{% url 'key_down' %}?id={{ user.id }}" >下载</a></td>
-                                        {% else %}
-                                        <td><span style="color: #586b7d">NoKey</span></td>
-                                        {% endif %}
-                                    </tr>
+                                    {#                                    <tr>#}
+                                    {#                                        <td class="text-navy">key</td>#}
+                                    {#                                        {% if user.username|key_exist %}#}
+                                    {#                                        <td><a  href="{% url 'key_down' %}?id={{ user.id }}" >下载</a></td>#}
+                                    {#                                        {% else %}#}
+                                    {#                                        <td><span style="color: #586b7d">NoKey</span></td>#}
+                                    {#                                        {% endif %}#}
+                                    {#                                    </tr>#}
                                     <tr>
                                         <td class="text-navy">Email</td>
                                         <td>{{ user.email }}</td>
@@ -76,29 +76,29 @@
                                         <td class="text-navy">所在用户组</td>
                                         <td>
                                              <table class="table">
-                                                 {% for group in user.group.all %}
-                                                    <tr>
-                                                        <td><a href="{% url 'user_group_list' %}?id={{ group.id }}">{{ group.name }}</a></td>
-                                                    </tr>
-                                                 {% endfor %}
+                                                 {#                                                 {% for group in user.group.all %}#}
+                                                 {#                                                    <tr>#}
+                                                 {#                                                        <td><a href="{% url 'user_group_list' %}?id={{ group.id }}">{{ group.name }}</a></td>#}
+                                                 {#                                                    </tr>#}
+                                                 {#                                                 {% endfor %}#}
                                              </table>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="text-navy">授权主机数量</td>
                                         <td>
-                                            {{ user_perm_info.asset.keys | length }}
+                                            {#                                            {{ user_perm_info.asset.keys | length }}#}
                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="text-navy">授权主机组</td>
                                         <td>
                                              <table class="table">
-                                                 {% for group in  user_perm_info.asset_group.keys%}
-                                                    <tr>
-                                                        <td><a href="{% url 'user_group_list' %}?id={{ group.id }}">{{ group.name }}</a></td>
-                                                    </tr>
-                                                 {% endfor %}
+                                                 {#                                                 {% for group in  user_perm_info.asset_group.keys%}#}
+                                                 {#                                                    <tr>#}
+                                                 {#                                                        <td><a href="{% url 'user_group_list' %}?id={{ group.id }}">{{ group.name }}</a></td>#}
+                                                 {#                                                    </tr>#}
+                                                 {#                                                 {% endfor %}#}
                                              </table>
                                         </td>
                                     </tr>
@@ -106,11 +106,11 @@
                                         <td class="text-navy">授权规则</td>
                                         <td>
                                              <table class="table">
-                                                 {% for rule in  user_perm_info.rule%}
-                                                    <tr>
-                                                        <td><a href="{% url 'role_list' %}?id={{ rule.id }}">{{ rule.name }}</a></td>
-                                                    </tr>
-                                                 {% endfor %}
+                                                 {#                                                 {% for rule in  user_perm_info.rule%}#}
+                                                 {#                                                    <tr>#}
+                                                 {#                                                        <td><a href="{% url 'role_list' %}?id={{ rule.id }}">{{ rule.name }}</a></td>#}
+                                                 {#                                                    </tr>#}
+                                                 {#                                                 {% endfor %}#}
                                              </table>
                                         </td>
                                     </tr>
@@ -143,32 +143,32 @@
                         <small><i class="fa fa-map-marker"></i> 这里包含了用户授权的主机和其映射的系统用户.</small>
                     </div>
                     <div class="ibox-content inspinia-timeline">
-                        {% for role, assets in role_assets.items %}
-                            <div class="timeline-item">
-                                <div class="row">
-                                    <div class="col-xs-3 date">
-                                        <i class="fa fa-info"></i>
-                                        <b>
-                                            <a href="{% url 'role_list' %}?id={{ role.id }}">{{ role.name }}</a></b>
-                                        <br>
-                                        <small class="text-navy">共: {{ assets.asset | length }}台</small>
-                                    </div>
-                                    <div class="col-xs-7 content no-top-border">
-                                        <p class="m-b-xs">
-                                            <strong>{{ role.comment }}</strong>
-                                        </p>
-                                        <p>
-                                            {% for asset in assets.asset %}
-                                                <a href="{% url 'asset_list' %}?id={{ asset.id }}">{{ asset.hostname }}</a><br>
-                                            {% endfor %}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        {% ifequal '{{ asset.asset | length }}' 0 %}
-                            (无)
-                        {% endifequal %}
+                        {#                        {% for role, assets in role_assets.items %}#}
+                        {#                            <div class="timeline-item">#}
+                        {#                                <div class="row">#}
+                        {#                                    <div class="col-xs-3 date">#}
+                        {#                                        <i class="fa fa-info"></i>#}
+                        {#                                        <b>#}
+                        {#                                            <a href="{% url 'role_list' %}?id={{ role.id }}">{{ role.name }}</a></b>#}
+                        {#                                        <br>#}
+                        {#                                        <small class="text-navy">共: {{ assets.asset | length }}台</small>#}
+                        {#                                    </div>#}
+                        {#                                    <div class="col-xs-7 content no-top-border">#}
+                        {#                                        <p class="m-b-xs">#}
+                        {#                                            <strong>{{ role.comment }}</strong>#}
+                        {#                                        </p>#}
+                        {#                                        <p>#}
+                        {#                                            {% for asset in assets.asset %}#}
+                        {#                                                <a href="{% url 'asset_list' %}?id={{ asset.id }}">{{ asset.hostname }}</a><br>#}
+                        {#                                            {% endfor %}#}
+                        {#                                        </p>#}
+                        {#                                    </div>#}
+                        {#                                </div>#}
+                        {#                            </div>#}
+                        {#                        {% endfor %}#}
+                        {#                        {% ifequal '{{ asset.asset | length }}' 0 %}#}
+                        {#                            (无)#}
+                        {#                        {% endifequal %}#}
                     </div>
                 </div>
             </div>

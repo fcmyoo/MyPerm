@@ -1,6 +1,7 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
 import time
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 class UserGroup(models.Model):
@@ -10,6 +11,8 @@ class UserGroup(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name_plural = '用户组'
 
 class User(AbstractUser):
     USER_ROLE_CHOICES = (
@@ -42,6 +45,8 @@ class AdminGroup(models.Model):
     def __str__(self):
         return '%s: %s' % (self.user.username, self.group.name)
 
+    class Meta:
+        verbose_name_plural = '管理员组'
 
 class Document(models.Model):
     def upload_to(self, filename):
@@ -49,3 +54,5 @@ class Document(models.Model):
 
     docfile = models.FileField(upload_to=upload_to)
     user = models.ForeignKey(User)
+    class Meta:
+        verbose_name_plural = '文件'

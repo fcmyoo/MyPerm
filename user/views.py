@@ -1,13 +1,11 @@
-from django.conf.global_settings import EMAIL_HOST_USER
-from django.shortcuts import render
 import uuid
-from django.db.models import Q
 
+from django.conf.global_settings import EMAIL_HOST_USER
+from django.db.models import Q
+import datetime
+from django.http import Http404
 from MyPerm.settings import MAIL_ENABLE, KEY
 from user.user_api import *
-
-# Create your views here.
-
 
 MAIL_FROM = EMAIL_HOST_USER
 
@@ -17,7 +15,7 @@ MAIL_FROM = EMAIL_HOST_USER
 def user_add(request):
     error = ''
     msg = ''
-    header_title, path1, path2 = '添加用户', '用户管理', '添加用户1'
+    header_title, path1, path2 = '添加用户', '用户管理', '添加用户'
     user_role = {
         'SU': '超级管理员',
         'CU': '普通用户',
@@ -32,7 +30,7 @@ def user_add(request):
         groups = request.POST.getlist('groups', '')
         admin_groups = request.POST.getlist('admin_groups', '')
         role = request.POST.get('role', 'CU')
-        uuid_r = uuid.uuid4().get_hex()
+        uuid_r = uuid_r = uuid.uuid4().hex
         extra = request.POST.getlist('extra', [])
         is_active = False if '0' in extra else True
         send_mail_need = False if '1' in extra else True
@@ -68,6 +66,7 @@ def user_add(request):
 # 展示用户列表
 @require_role(role='super')
 def user_list(request):
+    header_title, path1, path2 = '查看用户', '用户管理', '用户列表'
     user_role = {'SU': '超级管理员', 'GA': '组管理员', 'CU': '普通用户'}
     keyword = request.GET.get('keyword', '')
     gid = request.GET.get('gid', '')
@@ -88,6 +87,7 @@ def user_list(request):
 # 用户详情页
 @require_role(role='super')
 def user_detail(request):
+    header_title, path1, path2 = '用户详情', '用户管理', '用户详情'
     if request.session.get('role_id') == 0:
         user_id = request.user.id
     else:
@@ -104,6 +104,7 @@ def user_detail(request):
 # 修改用户
 @require_role(role='super')
 def user_edit(request):
+    header_title, path1, path2 = '编辑用户', '用户管理', '编辑用户'
     if request.method == 'GET':
         user_id = request.GET.get('id', '')
         if not user_id:
@@ -189,6 +190,7 @@ def profile(request):
 
 # 个人信息修改
 def change_info(request):
+    header_title, path1, path2 = '修改信息', '用户管理', '修改个人信息'
     user_id = request.user.id
     user = User.objects.get(id=user_id)
     error = ''
@@ -209,9 +211,10 @@ def change_info(request):
                 user.set_password(password)
                 user.save()
             msg = '修改成功'
-    return my_render('user/change_info.html', locals(), request)
+    return render(request,'user/change_info.html', locals() )
 
 
+# 忘记密码
 @defend_attack
 def forget_password(request):
     if request.method == 'POST':
@@ -233,4 +236,150 @@ def forget_password(request):
         else:
             error = '用户不存在或邮件地址错误'
 
-    return render(request,'user/forget_password.html', locals())
+    return render(request, 'user/forget_password.html', locals())
+
+
+# 重置密码
+@defend_attack
+def reset_password(request):
+    uuid_r = request.GET.get('uuid', '')
+    timestamp = request.GET.get('timestamp', '')
+    hash_encode = request.GET.get('hash', '')
+    action = '/user/password/rest/?uuid={}&timestamp={}&hash={}'.format(uuid_r, timestamp, hash_encode)
+    if hash_encode == PyCrypt.md5_crypt(uuid_r + timestamp + KEY):
+        if int(time.time()) - int(timestamp) > 600:
+            return http_error(request, '链接超时')
+    else:
+        return HttpResponse('hash效验失败')
+
+    if request.method == 'POST':
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        print(password, password_confirm)
+        if password != password_confirm:
+            return HttpResponse('两次输入的密码不一致!')
+        else:
+            user = get_object(User, uuid=uuid_r)
+            if user:
+                user.set_password(password)
+                user.save()
+                return http_success(request, '密码重设成功')
+            else:
+                return HttpResponse('用户不存在')
+
+    else:
+        return render(request, 'user/reset_password.html', locals())
+
+
+# 添加用户组
+@require_role(role='super')
+def group_add(request):
+    error = ''
+    msg = ''
+    herder_title, path1, path2 = '添加用户组', '用户组管理', '添加用户组'
+    user_all = User.objects.all()
+    if request.method == 'POST':
+        group_name = request.POST.get('group_name', '')
+        user_selected = request.POST.getlist('user_selected', '')
+        comment = request.POST.get('comment', '')
+        try:
+            if not group_name:
+                error = '组名不能为空'
+                raise ServerError(error)
+            if UserGroup.objects.filter(name=group_name):
+                error = '组名已存在'
+                raise ServerError(error)
+            db_add_group(name=group_name, user_id=user_selected, comment=comment)
+        except TypeError:
+            error = '添加小组失败'
+        except ServerError:
+            pass
+        else:
+            msg = '添加组{}成功'.format(group_name)
+    return render(request, 'user/group_add.html', locals())
+
+
+# 修改用户组
+@require_role(role='super')
+def group_edit(request):
+    error = ''
+    msg = ''
+    header_title, path1, path2 = '编辑用户组', '用户管理', '编辑用户组'
+    if request.method == 'GET':
+        group_id = request.GET.get('id', '')
+        user_group = get_object(UserGroup, id=group_id)
+        users_selected = get_object(User, group=user_group)
+        user_remain = User.objects.filter(~Q(group=user_group))
+        user_all = User.objects.all()
+    elif request.method == 'POST':
+        group_id = request.POST.get('id', '')
+        group_name = request.POST.get('group_name', '')
+        comment = request.POST.get('comment', '')
+        users_selected = request.POST.getlist('users_selected')
+        try:
+            if '' in [group_id, group_name]:
+                raise ServerError('组名不能为空')
+            if len(UserGroup.objects.filter(name=group_name)) > 1:
+                raise ServerError('{}用户组已存在'.format(group_name))
+
+            user_group = get_object_or_404(UserGroup, id=group_id)
+            user_group.user_set.clear()
+            for user in User.objects.filter(id__in=users_selected):
+                user.group.add(UserGroup.objects.get(id=group_id))
+
+            user_group.name = group_name
+            user_group.comment = comment
+            user_group.save()
+        except ServerError as e:
+            error = e
+        if not error:
+            return HttpResponseRedirect(reverse('user_group_list'))
+        else:
+            users_all = User.objects.all()
+            users_selected = User.objects.filter(group=user_group)
+            users_remain = User.objects.filter(~Q(group=user_group))
+    return render(request, 'user/group_edit.html', locals())
+
+
+# 用户组列表
+@require_role(role='super')
+def group_list(request):
+    header_title, path1, path2 = '查看用户组', '用户管理', '查看用户组'
+    keyword = request.GET.get('search', '')
+    user_group_list = UserGroup.objects.all().order_by('name')
+    group_id = request.GET.get('id', '')
+    if keyword:
+        user_group_list = user_group_list.filter(Q(name__icontains=keyword) | Q(comment__icontains=keyword))
+    if group_id:
+        user_group_list = user_group_list.filter(id=int(group_id))
+    user_group_list, p, user_groups, page_range, current_page, show_first, show_end = pages(user_group_list, request)
+    return render(request, 'user/group_list.html', locals())
+
+
+# 删除用户组
+@require_role(role='super')
+def group_del(request):
+    group_ids = request.GET.get('id', '')
+    group_id_list = group_ids.split(',')
+    for group_id in group_id_list:
+        UserGroup.objects.filter(id=group_id).delete()
+    return HttpResponse('删除成功')
+
+
+# 重发邮件
+@require_role('admin')
+def send_mail_retry(request):
+    uuid_r = request.GET.get('uuid', '1')
+    user = get_object(User, uuid=uuid_r)
+    msg = """
+    跳板机地址： %s
+    用户名：%s
+    重设密码：%s/juser/password/forget/
+    请登录web点击个人信息页面重新生成ssh密钥
+    """ % (URL, user.username, URL)
+
+    try:
+        send_mail('邮件重发', msg, MAIL_FROM, [user.email], fail_silently=False)
+    except IndexError:
+        return Http404
+    return HttpResponse('发送成功')
